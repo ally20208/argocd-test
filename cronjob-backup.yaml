@@ -1,0 +1,33 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: argocd-bk
+spec:
+  schedule: "0 * * * *"
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          nodeName: test-nginx-ssl-master-1
+          volumes:
+            - name: kube-config
+              hostPath:
+                path: /root/.kube/config
+            - name: tmp
+              nfs:
+                server: 127.0.0.1
+                path: /xxx/argocd_conf_bk
+          containers:
+          - name: argocd
+            image: xxxx/argocd/argocd:latest
+            imagePullPolicy: IfNotPresent
+            command:
+            - /bin/sh
+            - -c
+            - test -d /home/argocd/bk/$(date +%Y%m%d) && argocd admin export -n argocd > /home/argocd/bk/$(date +%Y%m%d)/bk-$(date +%Y%m%d-%H).yaml || mkdir /home/argocd/bk/$(date +%Y%m%d) && argocd admin export -n argocd > /home/argocd/bk/$(date +%Y%m%d)/bk-$(date +%Y%m%d-%H).yaml
+            volumeMounts:
+            - name: kube-config
+              mountPath: /home/argocd/.kube/config
+            - name: tmp
+              mountPath: /home/argocd/bk
+          restartPolicy: OnFailure
